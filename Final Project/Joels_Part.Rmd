@@ -1,0 +1,213 @@
+
+```{r}
+library(tidyverse)
+library(dplyr)
+library(tidyr)
+library(ggplot2)
+library(highcharter)
+library(scales)
+library(purrr)
+library(htmltools)
+```
+
+
+
+```{r}
+data = read_csv("Mixed_Beverage_Gross_Receipts.csv")
+ALL = data %>% filter(`Location City` %in% c("DALLAS", "HOUSTON", "SAN ANTONIO", "AUSTIN"))
+write.csv(ALL, "Gross_Receipts_Big_Four.csv", row.names = TRUE)
+
+
+DAL = data %>% filter(`Location City` == "DALLAS")
+write.csv(DAL, "Gross_Receipts_DAL.csv", row.names = TRUE)
+
+HOU = data %>% filter(`Location City` == "HOUSTON")
+write.csv(HOU, "Gross_Receipts_HOU.csv", row.names = TRUE)
+
+
+SA = data %>% filter(`Location City` == "SAN ANTONIO")
+write.csv(SA, "Gross_Receipts_SA.csv", row.names = TRUE)
+
+
+AUS = data %>% filter(`Location City` == "AUSTIN")
+write.csv(AUS, "Gross_Receipts_AUS.csv", row.names = TRUE)
+```
+
+
+```{r}
+SA = read_csv('Gross_Receipts_SA.csv')
+HOU = read_csv('Gross_Receipts_HOU.csv')
+DAL = read_csv('Gross_Receipts_DAL.csv')
+AUS = read_csv('Gross_Receipts_AUS.csv')
+ALL = read_csv('Gross_Receipts_Big_Four.csv')
+
+ALL = ALL %>% mutate(`Total Receipts` = `Total Receipts` - `Cover Charge Receipts`)
+DAL = DAL %>% mutate(`Total Receipts` = `Total Receipts` - `Cover Charge Receipts`)
+HOU = HOU %>% mutate(`Total Receipts` = `Total Receipts` - `Cover Charge Receipts`)
+SA = SA %>% mutate(`Total Receipts` = `Total Receipts` - `Cover Charge Receipts`)
+AUS = AUS %>% mutate(`Total Receipts` = `Total Receipts` - `Cover Charge Receipts`)
+```
+
+```{r}
+SA %>% 
+  select(`Location Name`, `Location Address`, `Location City`, `Liquor Receipts`, `Wine Receipts`, `Beer Receipts`) %>% 
+  group_by(`Location Address`) %>% 
+  summarise(across(c(`Liquor Receipts`, `Wine Receipts`, `Beer Receipts`), ~sum(.x, na.rm = TRUE))) %>% 
+  as.data.frame()
+
+SA1 = SA %>%    mutate(End_Date = mdy(`Obligation End Date`))
+SA1 = SA1 %>% mutate(Year = format(End_Date, "%Y"))
+SA1 = SA1 %>% mutate(`Total Sales` = `Liquor Receipts` + `Wine Receipts` + `Beer Receipts`)
+AUS1 = AUS %>%    mutate(End_Date = mdy(`Obligation End Date`))
+AUS1 = AUS1 %>% mutate(Year = format(End_Date, "%Y"))
+AUS1 = AUS1 %>% mutate(`Total Sales` = `Liquor Receipts` + `Wine Receipts` + `Beer Receipts`)
+DAL1 = DAL %>%    mutate(End_Date = mdy(`Obligation End Date`))
+DAL1 = DAL1 %>% mutate(Year = format(End_Date, "%Y"))
+DAL1 = DAL1 %>% mutate(`Total Sales` = `Liquor Receipts` + `Wine Receipts` + `Beer Receipts`)
+HOU1 = HOU %>%    mutate(End_Date = mdy(`Obligation End Date`))
+HOU1 = HOU1 %>% mutate(Year = format(End_Date, "%Y"))
+HOU1 = HOU1 %>% mutate(`Total Sales` = `Liquor Receipts` + `Wine Receipts` + `Beer Receipts`)
+ALL1 = ALL %>%    mutate(End_Date = mdy(`Obligation End Date`))
+ALL1 = ALL1 %>% mutate(Year = format(End_Date, "%Y"))
+ALL1 = ALL1 %>% mutate(`Total Sales` = `Liquor Receipts` + `Wine Receipts` + `Beer Receipts`)
+
+SA_per_year = SA1 %>% 
+  select(`Year`,`Location City`, `Liquor Receipts`, `Wine Receipts`, `Beer Receipts`, `Total Sales`) %>% 
+  filter(Year %in% c(2007:2023)) %>% 
+  group_by(`Year`) %>% 
+  summarise(across(c(`Liquor Receipts`, `Wine Receipts`, `Beer Receipts`, `Total Sales`), ~sum(.x/1000000, na.rm = TRUE)), .groups = "drop") %>% 
+  pivot_longer(-Year, names_to = "Type", values_to = "Amount")
+
+SA_per_year <- SA_per_year %>%
+  mutate(Amount = as.numeric(gsub("[$,]", "", Amount)))
+
+AUS_per_year = AUS1 %>% 
+  select(`Year`,`Location City`, `Liquor Receipts`, `Wine Receipts`, `Beer Receipts`, `Total Sales`) %>% 
+  filter(Year %in% c(2007:2023)) %>% 
+  group_by(`Year`) %>% 
+  summarise(across(c(`Liquor Receipts`, `Wine Receipts`, `Beer Receipts`, `Total Sales`), ~sum(.x/1000000, na.rm = TRUE)), .groups = "drop") %>% 
+  pivot_longer(-Year, names_to = "Type", values_to = "Amount")
+
+AUS_per_year <- AUS_per_year %>%
+  mutate(Amount = as.numeric(gsub("[$,]", "", Amount)))
+
+DAL_per_year = DAL1 %>% 
+  select(`Year`,`Location City`, `Liquor Receipts`, `Wine Receipts`, `Beer Receipts`, `Total Sales`) %>% 
+  filter(Year %in% c(2007:2023)) %>% 
+  group_by(`Year`) %>% 
+  summarise(across(c(`Liquor Receipts`, `Wine Receipts`, `Beer Receipts`, `Total Sales`), ~sum(.x/1000000, na.rm = TRUE)), .groups = "drop") %>% 
+  pivot_longer(-Year, names_to = "Type", values_to = "Amount")
+
+DAL_per_year <- DAL_per_year %>%
+  mutate(Amount = as.numeric(gsub("[$,]", "", Amount)))
+
+HOU_per_year = HOU1 %>% 
+  select(`Year`,`Location City`, `Liquor Receipts`, `Wine Receipts`, `Beer Receipts`, `Total Sales`) %>% 
+  filter(Year %in% c(2007:2023)) %>% 
+  group_by(`Year`) %>% 
+  summarise(across(c(`Liquor Receipts`, `Wine Receipts`, `Beer Receipts`, `Total Sales`), ~sum(.x/1000000, na.rm = TRUE)), .groups = "drop") %>% 
+  pivot_longer(-Year, names_to = "Type", values_to = "Amount")
+
+HOU_per_year <- HOU_per_year %>%
+  mutate(Amount = as.numeric(gsub("[$,]", "", Amount)))
+
+ALL_per_year = ALL1 %>% 
+  select(`Year`,`Location City`, `Liquor Receipts`, `Wine Receipts`, `Beer Receipts`, `Total Sales`) %>% 
+  filter(Year %in% c(2007:2023)) %>% 
+  group_by(`Year`) %>% 
+  summarise(across(c(`Liquor Receipts`, `Wine Receipts`, `Beer Receipts`, `Total Sales`), ~sum(.x/1000000, na.rm = TRUE)), .groups = "drop") %>% 
+  pivot_longer(-Year, names_to = "Type", values_to = "Amount")
+
+ALL_per_year <- ALL_per_year %>%
+  mutate(Amount = as.numeric(gsub("[$,]", "", Amount)))
+```
+
+
+```{r}
+TOTAL_SALES = data.frame(
+  Total_Sales_Houston = HOU_per_year$`Total Sales`,
+  Total_Sales_Dallas = DAL_per_year$`Total Sales`,
+  Total_Sales_San_Antonio = SA_per_year$`Total Sales`,
+  Total_Sales_Austin = AUS_per_year$`Total Sales`)
+
+ALL_per_year = ALL1 %>% 
+  select(`Year`, `Location City`, `Liquor Receipts`, `Wine Receipts`, `Beer Receipts`, `Total Sales`) %>% 
+  filter(Year %in% c(2007:2023)) %>% 
+  group_by(`Year`, `Location City`) %>% 
+  summarise(across(c(`Liquor Receipts`, `Wine Receipts`, `Beer Receipts`, `Total Sales`), ~sum(.x / 1000000, na.rm = TRUE)), .groups = "drop") %>% 
+  pivot_longer(-c(Year, `Location City`), names_to = "Type", values_to = "Amount")
+
+ALL_per_year %>% 
+  ggplot(aes(x = Year, y = Amount, colour = Type, group = Type)) +
+  geom_line(linewidth = 1) +
+  scale_x_discrete(
+    labels = function(x) substr(x, 3, 4)) +
+  scale_y_continuous(labels = scales::dollar) +
+  facet_wrap(~`Location City`, drop = TRUE) +
+  labs(
+    title = "Sales by Year and Type",
+    x = "Year",
+    y = "Amount (in Millions)"
+  ) +
+  theme_minimal()
+
+
+filtered_data = ALL_per_year %>%
+  filter(Type == "Total Sales")
+
+str(filtered_data)
+write.csv(filtered_data, "Total_Receipts_Big4.csv", row.names = TRUE)
+```
+
+```{r}
+highchart() %>%
+  hc_add_series(
+    data = filtered_data,
+    type = "line",
+    hcaes(x = Year, y = Amount, group = `Location City`)
+  ) %>%
+  hc_title(text = "Total Sales by Biggest Four Cities in Texas (2007-2023)") %>%
+  hc_xAxis(title = list(text = "Year")) %>%
+  hc_yAxis(
+    title = list(text = "Total Sales (in millions)"),
+    labels = list(format = "${value:,.0f}") # Format Y-axis as currency
+  ) %>%
+  hc_tooltip(pointFormat = "{series.name}: <b>${point.y:,.2f}</b>") %>%
+  hc_add_theme(hc_theme_economist())
+```
+
+
+
+```{r}
+highchart() %>%
+  hc_add_series(
+    data = SA_per_year,
+    type = "line",
+    hcaes(x = Year, y = Amount, group = Type)
+  ) %>%
+  hc_tooltip(pointFormat = "{series.name}: <b>${point.y:,.2f}</b>") %>%
+  hc_title(text = "Total 🥃 🍺 🍷 Sales for San Antonio (2007-2023)") %>%
+  hc_xAxis(
+    title = list(text = "Year"),
+    categories = unique(SA_per_year$Year), 
+    gridLineWidth = 0
+  ) %>%
+  hc_yAxis(
+    title = list(text = "Total Sales (in millions)"),
+    labels = list(format = "${value:,.0f}") # Format Y-axis as currency
+  ) %>%   hc_legend(
+    enabled = TRUE,
+    labelFormatter = JS("function() {
+      var labels = {
+        'Total Sales': 'Total Sales',
+        'Liquor Receipts': '🥃 Liquor',
+        'Beer Receipts': '🍺 Beer',
+        'Wine Receipts': '🍷 Wine'
+      };
+      return labels[this.name] || this.name;
+    }"),
+    reversed = FALSE # To keep the legend in the correct order
+  ) %>%
+
+  hc_add_theme(hc_theme_flat()) 
+```

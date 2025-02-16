@@ -1,0 +1,99 @@
+---
+title: "trial_for_final"
+author: "Connor Allison"
+date: "`r Sys.Date()`"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+pacman::p_load(tidyverse, ggtext, png, jpeg, showtext)
+theme_set(theme_minimal())
+```
+
+```{r}
+Alc_per_year = read_csv("Alc_per_year.csv")
+```
+
+
+```{r}
+df = read_csv('Mixed_Beverage_Gross_Receipts.csv')
+```
+
+```{r}
+head(df)
+```
+
+
+```{r}
+spec(df)
+```
+```{r}
+SAdf = 
+df %>% 
+  filter(`Location City` == 'SAN ANTONIO')
+```
+
+```{r}
+SAdf %>% 
+  select(`Taxpayer Name`, `Liquor Receipts`, `Wine Receipts`, `Beer Receipts`)
+```
+```{r}
+SAdf1 = SAdf %>% 
+  mutate(End_Date = mdy(`Obligation End Date`)) %>% 
+  mutate(Year = format(End_Date, '%Y')) %>% 
+  mutate(Total_Alc = `Liquor Receipts` + `Wine Receipts` + `Beer Receipts`)
+```
+
+```{r}
+SAdf1 %>% 
+  select(`Year`, `Liquor Receipts`, `Wine Receipts`, `Beer Receipts`, Total_Alc) %>% 
+  group_by(`Year`) %>% 
+  summarise(across(c(`Liquor Receipts`, `Wine Receipts`, `Beer Receipts`, Total_Alc), ~sum(.x, na.rm = TRUE)), .groups = "drop") %>% 
+  ggplot(aes(`Year`, `Wine Receipts`, group = 1)) +
+  geom_line()
+```
+
+```{r}
+Alc_per_year = SAdf1 %>% 
+  select(`Year`, `Liquor Receipts`, `Wine Receipts`, `Beer Receipts`, Total_Alc) %>% 
+  filter(Year %in% c(2007:2023)) %>% 
+  group_by(`Year`) %>% 
+  summarise(across(c(`Liquor Receipts`, `Wine Receipts`, `Beer Receipts`, Total_Alc), ~sum(.x/1000000, na.rm = TRUE)), .groups = "drop") %>% 
+  pivot_longer(-Year, names_to = "Type", values_to = "Amount")
+```
+
+
+```{r}
+write_csv(Alc_per_year, "~/Library/CloudStorage/OneDrive-Personal/Desktop/School/MSDA/Fall 2024/Visualization and Communication/Final Project/Alc_per_year.csv")
+```
+
+```{r}
+Alc_per_year %>% 
+  ggplot(aes(x = Year, y = Amount, colour = Type, group = Type)) +
+  geom_line()
+```
+
+
+
+
+
+Location data:
+
+```{r}
+spec(SAdf)
+```
+```{r}
+SAdf %>% 
+  select(`Location Name`, `Location Address`, `Liquor Receipts`, `Wine Receipts`, `Beer Receipts`) %>% 
+  group_by(`Location Address`) %>% 
+  summarise(across(c(`Liquor Receipts`, `Wine Receipts`, `Beer Receipts`), ~sum(.x, na.rm = TRUE))) %>% 
+  as.data.frame()
+```
+
+```{r}
+SAdf %>% 
+  select(`Location Name`, `Taxpayer Address`, `Liquor Receipts`, `Wine Receipts`, `Beer Receipts`) %>% 
+  group_by(`Taxpayer Address`) %>% 
+  summarise(across(c(`Liquor Receipts`, `Wine Receipts`, `Beer Receipts`), ~sum(.x, na.rm = TRUE))) %>% 
+  as.data.frame()
+```

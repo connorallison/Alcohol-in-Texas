@@ -1,0 +1,125 @@
+---
+title: "trial_for_final"
+author: "Connor Allison"
+date: "`r Sys.Date()`"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+pacman::p_load(tidyverse, ggtext, png, jpeg, showtext)
+theme_set(theme_minimal())
+library(plotly)
+library(highcharter)
+```
+
+Read in Alc_per_year data
+```{r}
+Alc_per_year = read_csv("Alc_per_year.csv")
+Alc_per_person = read_csv("alc_per_person.csv")
+```
+
+Wide Version
+```{r}
+per_year = Alc_per_year %>% 
+  pivot_wider(names_from = Type, values_from = Amount)
+```
+
+HighChart Alc plot
+```{r}
+Alc_per_year %>% 
+  hchart("line", hcaes(x = Year, y = Amount, group = Type)) %>% 
+  hc_add_theme(hc_theme_flatdark())
+```
+
+Alc per person adjusted for inflation and not adjusted
+```{r}
+highchart() %>% 
+  hc_xAxis(categories = Alc_per_person$Year) %>% 
+  hc_add_series(name = "Alcohol per Person w/ Inflation", data = Alc_per_person$Total_Alc_per_person_inflation) %>% 
+  hc_add_series(name = "Alcohol per Person w/o Inflation", data = Alc_per_person$`w/o_Inflation`) %>% 
+  hc_add_series(name = "Total Alcohol w/o Inflation", data = Alc_per_person$`Total Alc`)%>% 
+  hc_add_theme(hc_theme_ffx())
+```
+
+Alc Type per Person adjusted for Inflation
+```{r}
+Alc_per_person %>% 
+  select(Year, liq_pp_wi, wine_pp_wi, beer_pp_wi, Total_Alc_per_person_inflation) %>% 
+  pivot_longer(-Year, names_to = "type", values_to = "amount") %>% 
+  hchart("line", hcaes(x = Year, y = amount, group = type)) %>% 
+  hc_add_theme(hc_theme_flat())
+```
+
+
+```{r}
+#| fig-width: 12
+#| fig-height: 8
+Alc_per_person %>% 
+  select(Year, Total_Alc_per_person_inflation, liq_pp_wi, beer_pp_wi, wine_pp_wi) %>% 
+  pivot_longer(-Year, names_to = "type", values_to = "amount") %>% 
+  mutate(type = factor(type, 
+                      levels = c("Total_Alc_per_person_inflation", "liq_pp_wi", "beer_pp_wi", "wine_pp_wi"))) %>%
+  hchart("line", hcaes(x = Year, y = amount, group = type)) %>% 
+  hc_tooltip(
+    shared = TRUE,
+    headerFormat = "<b>Year: {point.x}</b><br/>",
+    formatter = JS("function() {
+      var points = this.points;
+      var order = {
+        'liq_pp_wi': 1,
+        'beer_pp_wi': 2,
+        'wine_pp_wi': 3,
+        'Total_Alc_per_person_inflation': 4
+      };
+      var labels = {
+        'liq_pp_wi': '🥃 Liquor',
+        'beer_pp_wi': '🍺 Beer',
+        'wine_pp_wi': '🍷 Wine',
+        'Total_Alc_per_person_inflation': 'Total'
+      };
+      
+      points.sort(function(a, b) {
+        return order[a.series.name] - order[b.series.name];
+      });
+      
+      var s = '<b>Year: ' + this.x + '</b><br/>';
+      points.forEach(function(point) {
+        s += labels[point.series.name] + ': $' + Highcharts.numberFormat(point.y, 2) + '<br/>';
+      });
+      return s;
+    }")
+  ) %>%
+  hc_plotOptions(
+    series = list(
+      reverseStacks = TRUE
+    )
+  ) %>%
+  hc_legend(
+    enabled = TRUE,
+    reversed = FALSE,
+    labelFormatter = JS("function() {
+      var labels = {
+        'Total_Alc_per_person_inflation': 'Total',
+        'liq_pp_wi': 'Liquor',
+        'beer_pp_wi': 'Beer',
+        'wine_pp_wi': 'Wine'
+      };
+      return labels[this.name] || this.name;
+    }")
+  ) %>%
+  hc_yAxis(
+    labels = list(format = "${value:.2f}"),
+    title = list(text = "")
+  ) %>%
+  hc_title(
+    text = "Money Spent on Alcohol per Person in San Antonio 🍺",
+    style = list(fontSize = "18px")
+  ) %>%
+  hc_subtitle(
+    text = "Adjusted for inflation",
+    style = list(fontSize = "14px")
+  ) %>%
+  hc_add_theme(hc_theme_flat())
+```
+
+
