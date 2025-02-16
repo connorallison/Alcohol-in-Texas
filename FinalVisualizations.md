@@ -1,0 +1,221 @@
+Alcohol in Texas Visualizations
+================
+Connor Allison
+2025-02-16
+
+Read in Alc_per_year data
+
+``` r
+Alc_per_person = read_csv("alc_per_person.csv")
+```
+
+    ## Rows: 17 Columns: 14
+    ## ── Column specification ────────────────────────────────────────────────────────
+    ## Delimiter: ","
+    ## dbl (14): Year, Liquor, Wine, Beer, Total Alc, Population, Total_Alc_per_per...
+    ## 
+    ## ℹ Use `spec()` to retrieve the full column specification for this data.
+    ## ℹ Specify the column types or set `show_col_types = FALSE` to quiet this message.
+
+``` r
+Big_4 = read_csv("Total_Receipts_Big4.csv")
+```
+
+    ## New names:
+    ## Rows: 68 Columns: 5
+    ## ── Column specification
+    ## ──────────────────────────────────────────────────────── Delimiter: "," chr
+    ## (2): Location City, Type dbl (3): ...1, Year, Amount
+    ## ℹ Use `spec()` to retrieve the full column specification for this data. ℹ
+    ## Specify the column types or set `show_col_types = FALSE` to quiet this message.
+    ## • `` -> `...1`
+
+Total Alcohol in the Big 4
+
+``` r
+highchart() %>%
+  hc_add_series(
+    data = Big_4,
+    type = "line",
+    hcaes(x = Year, y = Amount, group = `Location City`)
+  ) %>%
+  hc_title(
+    text = "Total Sales by Biggest Four Cities in Texas",
+    align = "center"
+  ) %>%
+  hc_xAxis(title = list(text = "Year")) %>%
+  hc_yAxis(
+    title = list(text = "Total Sales (in millions)"),
+    labels = list(
+      formatter = JS("function() { 
+        return '$' + Highcharts.numberFormat(this.value, 0, '.', ','); 
+      }")
+    )
+  ) %>%
+  hc_tooltip(
+    pointFormat = "{series.name}: <b>${point.y:,.2f}</b>",
+    formatter = JS("function() { 
+      return this.series.name.split(' ').map(function(word) {
+        return word.charAt(0).toUpperCase() + word.slice(1).toLowerCase();
+      }).join(' ') + 
+      ': <b>$' + Highcharts.numberFormat(this.y, 2, '.', ',') + '</b>'; 
+    }")
+  ) %>%
+  hc_add_theme(hc_theme_economist())
+```
+
+    ## PhantomJS not found. You can install it with webshot::install_phantomjs(). If it is installed, please make sure the phantomjs executable can be found via the PATH variable.
+
+![](FinalVisualizations_files/figure-gfm/unnamed-chunk-2-1.png)<!-- -->
+
+Normalizing the data
+
+``` r
+highchart() %>% 
+hc_xAxis(categories = Alc_per_person$Year) %>% 
+hc_add_series(name = "Total Alcohol w/o Inflation", data = Alc_per_person$`Total Alc`, type = "line") %>% 
+hc_add_series(name = "Total Alcohol w/ Inflation", data = Alc_per_person$with_inflation, type = "line") %>%
+hc_add_series(name = "Alcohol per Person w/o Inflation", data = Alc_per_person$`w/o_Inflation`, type = "line") %>% 
+hc_add_series(name = "Alcohol per Person w/ Inflation", data = Alc_per_person$Total_Alc_per_person_inflation, type = "line") %>%
+hc_tooltip(
+  shared = TRUE,
+  headerFormat = "<b>Year: {point.x}</b><br/>",
+  formatter = JS("function() {
+    var points = this.points;
+    var order = {
+      'Total Alcohol w/o Inflation': 1,
+      'Total Alcohol w/ Inflation': 2,
+      'Alcohol per Person w/o Inflation': 3,
+      'Alcohol per Person w/ Inflation': 4
+    };
+    var labels = {
+      'Total Alcohol w/o Inflation': 'Raw Data',
+      'Total Alcohol w/ Inflation': 'Inflation',
+      'Alcohol per Person w/o Inflation': 'Population',
+      'Alcohol per Person w/ Inflation': 'Inflation and Population'
+    };
+    
+    points.sort(function(a, b) {
+      return order[a.series.name] - order[b.series.name];
+    });
+    
+    var s = '<b>Year: ' + this.x + '</b><br/>';
+    points.forEach(function(point) {
+      var isPopulationSeries = point.series.name.includes('per Person');
+      var suffix = isPopulationSeries ? '' : 'M';
+      s += labels[point.series.name] + ': $' + Math.round(point.y) + suffix + '<br/>';
+    });
+    return s;
+  }")
+) %>%
+hc_plotOptions(
+  series = list(
+    reverseStacks = TRUE
+  )
+) %>%
+hc_legend(
+  enabled = TRUE,
+  align = "center",
+  reversed = FALSE,
+  labelFormatter = JS("function() {
+    var labels = {
+      'Total Alcohol w/o Inflation': 'Raw Data',
+      'Total Alcohol w/ Inflation': 'Inflation',
+      'Alcohol per Person w/o Inflation': 'Population',
+      'Alcohol per Person w/ Inflation': 'Inflation and Population'
+    };
+    return labels[this.name] || this.name;
+  }")
+) %>%
+hc_yAxis(
+  labels = list(
+    formatter = JS("function() { return '$' + (this.value).toLocaleString(); }")
+  ),
+  title = list(text = "")
+) %>%
+hc_title(
+  text = "Money Spent on Alcohol in San Antonio 🍺",
+  style = list(fontSize = "18px"),
+  align = "center"
+) %>%
+hc_subtitle(
+  text = "Comparing Inflation and Population Adjustments",
+  style = list(fontSize = "14px"),
+  align = "center"
+) %>%
+hc_add_theme(hc_theme_ffx())
+```
+
+![](FinalVisualizations_files/figure-gfm/unnamed-chunk-3-1.png)<!-- -->
+Types of Alcohol in San Antonio
+
+``` r
+Alc_per_person %>% 
+  select(Year, Total_Alc_per_person_inflation, liq_pp_wi, beer_pp_wi, wine_pp_wi) %>% 
+  pivot_longer(-Year, names_to = "type", values_to = "amount") %>% 
+  mutate(type = factor(type, 
+                      levels = c("Total_Alc_per_person_inflation", "liq_pp_wi", "beer_pp_wi", "wine_pp_wi"))) %>%
+  hchart("line", hcaes(x = Year, y = amount, group = type)) %>% 
+  hc_tooltip(
+    shared = TRUE,
+    headerFormat = "<b>Year: {point.x}</b><br/>",
+    formatter = JS("function() {
+      var points = this.points;
+      var order = {
+        'liq_pp_wi': 1,
+        'beer_pp_wi': 2,
+        'wine_pp_wi': 3,
+        'Total_Alc_per_person_inflation': 4
+      };
+      var labels = {
+        'liq_pp_wi': '🥃 Liquor',
+        'beer_pp_wi': '🍺 Beer',
+        'wine_pp_wi': '🍷 Wine',
+        'Total_Alc_per_person_inflation': 'Total'
+      };
+      
+      points.sort(function(a, b) {
+        return order[a.series.name] - order[b.series.name];
+      });
+      
+      var s = '<b>Year: ' + this.x + '</b><br/>';
+      points.forEach(function(point) {
+        s += labels[point.series.name] + ': $' + Highcharts.numberFormat(point.y, 2) + '<br/>';
+      });
+      return s;
+    }")
+  ) %>%
+  hc_plotOptions(
+    series = list(
+      reverseStacks = TRUE
+    )
+  ) %>%
+  hc_legend(
+    enabled = TRUE,
+    reversed = FALSE,
+    labelFormatter = JS("function() {
+      var labels = {
+        'Total_Alc_per_person_inflation': 'Total',
+        'liq_pp_wi': 'Liquor',
+        'beer_pp_wi': 'Beer',
+        'wine_pp_wi': 'Wine'
+      };
+      return labels[this.name] || this.name;
+    }")
+  ) %>%
+  hc_yAxis(
+    labels = list(format = "${value:.2f}"),
+    title = list(text = "")
+  ) %>%
+  hc_title(
+    text = "Money Spent on Alcohol per Person in San Antonio 🍺",
+    style = list(fontSize = "18px")
+  ) %>%
+  hc_subtitle(
+    text = "Adjusted for inflation",
+    style = list(fontSize = "14px")
+  ) %>%
+  hc_add_theme(hc_theme_flat())
+```
+
+![](FinalVisualizations_files/figure-gfm/unnamed-chunk-4-1.png)<!-- -->
