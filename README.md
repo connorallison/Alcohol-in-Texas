@@ -5,13 +5,20 @@ date: "December 2024"
 
 First off, let us apologies for the lack of organization apparent in this folder. We have opted to keep all of the Rmd and CSV files that were the result of data cleaning, exploration and educationally motivated trial and error. Descriptions of all files:
 “Mixed_Beverage_Gross_Receipts”: original unedited data
+
 “Practice_FinalProject.Rmd”: used to explore the original data, create and format the year column, then ultimently create the “Alc_per_year.csv” which was then copied and added to in Excel to create what became the “alc_per_person.csv”
+
 “Presentation_Final.qmd”: contains the three graphs used in the presentation 
+
 “Total Alcohol Receipts Across San Antonio.twbx”: tableau map used in presentation
+
 “alc_per_person.csv”: used line plot 2 and 3. Includes alcohol by type adjusted and not adjusted for population and inflation. CPI was used to adjust data for inflation. Our source for this CPI data was https://www.minneapolisfed.org/about-us/monetary-policy/inflation-calculator/consumer-price-index-1913-
 Population data was retrieved from https://www.macrotrends.net/global-metrics/cities/23128/san-antonio/population
+
 ‘Alc_VS.Rmd’: contains the second graph in the final presentation 
+
 ‘AlcTypesComp.Rmd’: contains the third graph in the final presentation 
+
 “Joels_Part.Rmd”: here is were the original data was manipulated to form “Total_Receipts_Big4.csv” which was used to make the first graph in “Presentation_Final.qmd”. Joels_part also led to the creation of Gross_Receipts_AUS.csv,
 Gross_Receipts_Big_Four.csv, Gross_Receipts_DAL.csv, Gross_Receipts_HOU.csv, Gross_Receipts_SA.csv
 
